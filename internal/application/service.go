@@ -133,7 +133,19 @@ func (s *Service) mutate(batchID string, meta Metadata, eventType string, comman
 	if err != nil {
 		return nil, classify(err)
 	}
+	s.invalidatePreviews(batchID)
 	return result, nil
+}
+
+func (s *Service) invalidatePreviews(batchID string) {
+	prefix := batchID + "\x00"
+	s.previewMu.Lock()
+	for key := range s.previews {
+		if strings.HasPrefix(key, prefix) {
+			delete(s.previews, key)
+		}
+	}
+	s.previewMu.Unlock()
 }
 
 func (s *Service) Create(command CreateBatchCommand) (*MutationResult, error) {
@@ -164,6 +176,7 @@ func (s *Service) Create(command CreateBatchCommand) (*MutationResult, error) {
 	if err != nil {
 		return nil, classify(err)
 	}
+	s.invalidatePreviews(command.BatchID)
 	return result, nil
 }
 

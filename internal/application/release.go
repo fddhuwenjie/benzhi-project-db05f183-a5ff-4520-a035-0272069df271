@@ -52,6 +52,7 @@ func (s *Service) Release(batchID string, command ReleaseCommand) (*MutationResu
 	if err != nil {
 		return nil, classify(err)
 	}
+	s.invalidatePreviews(batchID)
 	return result, nil
 }
 
