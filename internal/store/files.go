@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,7 +70,18 @@ func readJSON(path string, target any) error {
 	}
 	decoder := json.NewDecoder(strings.NewReader(string(data)))
 	decoder.DisallowUnknownFields()
-	return decoder.Decode(target)
+	if err := decoder.Decode(target); err != nil {
+		return err
+	}
+	var extra any
+	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
+		return fmt.Errorf("持久化文件在首个 JSON 值之后包含非空白内容")
+	}
+	remainder := data[decoder.InputOffset():]
+	if strings.TrimSpace(string(remainder)) != "" {
+		return fmt.Errorf("持久化文件在首个 JSON 值之后包含非空白内容")
+	}
+	return nil
 }
 
 func exists(path string) bool {

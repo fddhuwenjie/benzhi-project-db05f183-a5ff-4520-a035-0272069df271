@@ -53,7 +53,8 @@ func (r *Repository) loadUnlocked(batchID string) (*envelope, error) {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, ErrNotFound
 		}
-		return nil, err
+		r.quarantined[batchID] = err.Error()
+		return nil, &CorruptBatch{batchID, err.Error()}
 	}
 	if value.Idempotency == nil {
 		value.Idempotency = map[string]IdempotencyRecord{}
