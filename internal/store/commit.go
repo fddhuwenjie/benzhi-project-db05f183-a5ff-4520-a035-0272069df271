@@ -27,7 +27,10 @@ func (r *Repository) Commit(input Commit) error {
 	} else if loadErr != nil {
 		return loadErr
 	} else {
-		value = current
+		value = cloneEnvelope(current)
+		if value == nil {
+			return errors.New("聚合快照深拷贝失败")
+		}
 	}
 	if existing, ok := value.Idempotency[input.RequestID]; ok {
 		if existing.Fingerprint != input.Fingerprint {
@@ -70,12 +73,12 @@ func (r *Repository) Commit(input Commit) error {
 	if err := atomicJSON(path, value); err != nil {
 		return err
 	}
-	r.cache[input.Batch.BatchID] = value
 	if input.Manifest != nil {
 		if err := atomicJSON(manifestPath, input.Manifest); err != nil {
 			return err
 		}
 	}
+	r.cache[input.Batch.BatchID] = value
 	return nil
 }
 
@@ -100,18 +103,22 @@ func (r *Repository) LookupRequest(batchID, requestID, fingerprint string) (*Ide
 func (r *Repository) RecordFailure(batchID string, expectedRevision int64, requestID, fingerprint string, status int, response json.RawMessage, occurredAt time.Time) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	value, err := r.loadUnlocked(batchID)
+	current, err := r.loadUnlocked(batchID)
 	if err != nil {
 		return err
 	}
-	if existing, ok := value.Idempotency[requestID]; ok {
+	if existing, ok := current.Idempotency[requestID]; ok {
 		if existing.Fingerprint != fingerprint {
 			return &IdempotencyConflict{requestID}
 		}
 		return nil
 	}
-	if value.Batch.Revision != expectedRevision {
-		return &RevisionConflict{Expected: expectedRevision, Actual: value.Batch.Revision}
+	if current.Batch.Revision != expectedRevision {
+		return &RevisionConflict{Expected: expectedRevision, Actual: current.Batch.Revision}
+	}
+	value := cloneEnvelope(current)
+	if value == nil {
+		return errors.New("聚合快照深拷贝失败")
 	}
 	value.Idempotency[requestID] = IdempotencyRecord{RequestID: requestID, Fingerprint: fingerprint,
 		Status: status, Response: append([]byte(nil), response...), CreatedAt: occurredAt.UTC()}
@@ -119,7 +126,11 @@ func (r *Repository) RecordFailure(batchID string, expectedRevision int64, reque
 	if err != nil {
 		return err
 	}
-	return atomicJSON(path, value)
+	if err := atomicJSON(path, value); err != nil {
+		return err
+	}
+	r.cache[batchID] = value
+	return nil
 }
 
 func (r *Repository) Timeline(batchID string) (Timeline, error) {

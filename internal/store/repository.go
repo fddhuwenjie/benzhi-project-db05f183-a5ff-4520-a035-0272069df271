@@ -113,3 +113,22 @@ func cloneBatch(batch *domain.CorpusBatch) (*domain.CorpusBatch, error) {
 	}
 	return &cloned, nil
 }
+
+// cloneEnvelope 深拷贝聚合信封，使写入路径可在持久化前修改副本而不污染缓存。
+func cloneEnvelope(value *envelope) *envelope {
+	if value == nil {
+		return nil
+	}
+	data, err := json.Marshal(value)
+	if err != nil {
+		return nil
+	}
+	var cloned envelope
+	if err := json.Unmarshal(data, &cloned); err != nil {
+		return nil
+	}
+	if cloned.Idempotency == nil {
+		cloned.Idempotency = map[string]IdempotencyRecord{}
+	}
+	return &cloned
+}
