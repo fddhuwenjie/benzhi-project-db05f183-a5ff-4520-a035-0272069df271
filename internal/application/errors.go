@@ -32,6 +32,10 @@ func classify(err error) *AppError {
 	if errors.As(err, &corrupt) {
 		return &AppError{Code: "batch_quarantined", Message: err.Error()}
 	}
+	var invalidBatchID *store.InvalidBatchID
+	if errors.As(err, &invalidBatchID) {
+		return &AppError{Code: "validation", Message: err.Error()}
+	}
 	if errors.Is(err, store.ErrNotFound) {
 		return &AppError{Code: "not_found", Message: "批次不存在"}
 	}

@@ -36,6 +36,15 @@ func validateMetadata(meta Metadata) error {
 	return nil
 }
 
+// validateBatchID 在任何存储操作前校验批次标识，确保含有存储路径不允许字符的
+// 标识始终返回可识别的 validation 错误，且不触发目录或幂等记录写入。
+func validateBatchID(batchID string) error {
+	if err := store.ValidateBatchID(batchID); err != nil {
+		return &AppError{Code: "validation", Message: err.Error()}
+	}
+	return nil
+}
+
 func fingerprint(eventType string, value any) string {
 	return domain.Digest(struct {
 		Type  string `json:"type"`
@@ -92,6 +101,9 @@ func (s *Service) mutate(batchID string, meta Metadata, eventType string, comman
 	if err := validateMetadata(meta); err != nil {
 		return nil, err
 	}
+	if err := validateBatchID(batchID); err != nil {
+		return nil, err
+	}
 	release := s.coordinator.acquire(batchID)
 	defer release()
 	fp := fingerprint(eventType, command)
@@ -134,6 +146,9 @@ func (s *Service) Create(command CreateBatchCommand) (*MutationResult, error) {
 	}
 	if command.ExpectedRevision != -1 {
 		return nil, &AppError{Code: "validation", Message: "创建批次的 expected_revision 必须为 -1"}
+	}
+	if err := validateBatchID(command.BatchID); err != nil {
+		return nil, err
 	}
 	release := s.coordinator.acquire(command.BatchID)
 	defer release()

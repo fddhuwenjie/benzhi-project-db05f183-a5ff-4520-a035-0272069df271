@@ -3,19 +3,30 @@ package store
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
+// InvalidBatchID 表示批次标识包含存储路径不允许的字符。
+// 该错误属于客户端可修正的 validation 级问题，不应归类为内部错误。
+type InvalidBatchID struct{ Reason string }
+
+func (e *InvalidBatchID) Error() string { return e.Reason }
+
+// ValidateBatchID 校验批次标识是否只包含存储路径允许的字符，供应用层在触碰持久化前调用。
+func ValidateBatchID(value string) error {
+	_, err := safeID(value)
+	return err
+}
+
 func safeID(value string) (string, error) {
 	if value == "" || value == "." || value == ".." {
-		return "", fmt.Errorf("非法批次标识")
+		return "", &InvalidBatchID{Reason: "非法批次标识"}
 	}
 	for _, r := range value {
 		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_') {
-			return "", fmt.Errorf("批次标识只能包含字母、数字、连字符和下划线")
+			return "", &InvalidBatchID{Reason: "批次标识只能包含字母、数字、连字符和下划线"}
 		}
 	}
 	return value, nil

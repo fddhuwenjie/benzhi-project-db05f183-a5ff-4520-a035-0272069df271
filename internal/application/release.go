@@ -13,6 +13,9 @@ func (s *Service) Release(batchID string, command ReleaseCommand) (*MutationResu
 	if err := validateMetadata(command.Metadata); err != nil {
 		return nil, err
 	}
+	if err := validateBatchID(batchID); err != nil {
+		return nil, err
+	}
 	unlock := s.coordinator.acquire(batchID)
 	defer unlock()
 	fp := fingerprint("batch.released", command)
@@ -56,6 +59,9 @@ func (s *Service) Release(batchID string, command ReleaseCommand) (*MutationResu
 }
 
 func (s *Service) Verify(batchID string) (*Verification, error) {
+	if err := validateBatchID(batchID); err != nil {
+		return nil, err
+	}
 	batch, err := s.repo.Load(batchID)
 	if err != nil {
 		return nil, classify(err)

@@ -41,6 +41,9 @@ type AuditProgress struct {
 }
 
 func (s *Service) Detail(batchID string) (*BatchDetail, error) {
+	if err := validateBatchID(batchID); err != nil {
+		return nil, err
+	}
 	batch, err := s.repo.Load(batchID)
 	if err != nil {
 		return nil, classify(err)
@@ -123,6 +126,9 @@ func (s *Service) List() ([]*domain.CorpusBatch, error) {
 }
 
 func (s *Service) AuditPreview(batchID, seed string) (*domain.AuditRound, error) {
+	if err := validateBatchID(batchID); err != nil {
+		return nil, err
+	}
 	batch, err := s.repo.Load(batchID)
 	if err != nil {
 		return nil, classify(err)
