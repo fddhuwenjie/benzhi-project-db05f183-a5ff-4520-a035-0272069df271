@@ -208,6 +208,7 @@ func buildGates(batch *domain.CorpusBatch) []GateView {
 		}
 	}
 	gates := make([]GateView, 0, len(states))
+	correctionCompleted := correctionCompleted(batch)
 	for index, state := range states {
 		status := "PENDING"
 		if index < current {
@@ -215,6 +216,9 @@ func buildGates(batch *domain.CorpusBatch) []GateView {
 		}
 		if index == current {
 			status = "CURRENT"
+		}
+		if index > current && state == domain.StateCorrection && correctionCompleted {
+			status = "COMPLETED"
 		}
 		gate := GateView{State: state, Label: labels[index], Status: status}
 		if state == domain.StateAdjudicating && batch.State == domain.StateAnnotating {
@@ -241,4 +245,19 @@ func allResolved(batch *domain.CorpusBatch) bool {
 }
 func latestAuditPassed(batch *domain.CorpusBatch) bool {
 	return len(batch.Audits) > 0 && batch.Audits[len(batch.Audits)-1].Outcome == "PASSED"
+}
+
+// correctionCompleted reports whether the batch has finished a bounded
+// correction cycle for a previously failed audit. The correction gate must
+// stay COMPLETED once the batch has moved past CORRECTION after all items in a
+// failed round were corrected, even when a focused re-audit returns the batch
+// to AUDITING. A batch that has never failed an audit (or whose correction is
+// still in progress) is not yet completed.
+func correctionCompleted(batch *domain.CorpusBatch) bool {
+	for _, round := range batch.Audits {
+		if round.Outcome == "FAILED" && round.CorrectionStatus == "COMPLETED" {
+			return true
+		}
+	}
+	return false
 }
