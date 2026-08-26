@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>方言语料放行工作台</title>
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <header>
+    <div><p class="eyebrow">DIALECT CORPUS · RELEASE GATE</p><h1>方言语料放行工作台</h1></div>
+    <div id="health" class="pill">本地持久化 · 同源操作</div>
+  </header>
+  <main>
+    <aside>
+      <div class="aside-title"><h2>语料批次</h2><button id="new-batch" class="secondary">新建</button></div>
+      <div id="batch-list" class="batch-list"><p class="muted">正在读取批次…</p></div>
+    </aside>
+    <section class="workspace">
+      <div id="empty" class="empty"><span>标</span><h2>选择或新建批次</h2><p>冻结规范后，依次完成双人标注、裁决、抽审、返修与发布验证。</p></div>
+      <div id="batch-view" hidden>
+        <div class="batch-head">
+          <div><p id="site" class="eyebrow"></p><h2 id="title"></h2><p id="source" class="muted"></p></div>
+          <div class="state-block"><span id="state" class="state"></span><small id="revision"></small></div>
+        </div>
+        <nav id="gates" class="gates"></nav>
+        <div class="dashboard">
+          <article><span>条目</span><strong id="item-count">0</strong></article>
+          <article><span>待裁决</span><strong id="dispute-count">0</strong></article>
+          <article><span>审计轮次</span><strong id="audit-count">0</strong></article>
+          <article><span>事件</span><strong id="event-count">0</strong></article>
+		  <article><span>批次一致率</span><strong id="agreement-rate">—</strong></article>
+		  <article><span>低一致项</span><strong id="low-count">0</strong></article>
+        </div>
+        <div class="columns">
+          <section class="panel"><div class="panel-head"><h3>当前门禁动作</h3><span id="action-hint"></span></div><div id="actions"></div></section>
+          <section class="panel"><div class="panel-head"><h3>条目与待办</h3></div><div id="items"></div><div id="disputes"></div></section>
+        </div>
+		<section class="panel quality-panel"><div class="panel-head"><h3>质量分层与人员负载</h3><span id="agreement-fields"></span></div><div id="low-agreement"></div><div id="annotator-stats"></div><div id="audit-rounds"></div></section>
+        <section class="panel timeline-panel"><div class="panel-head"><h3>只追加时间线</h3><span id="chain"></span></div><ol id="timeline"></ol></section>
+        <section id="manifest-panel" class="panel" hidden><div class="panel-head"><h3>不可变发布清单</h3><button id="verify" class="secondary">重算验证</button></div><pre id="manifest"></pre><div id="verification"></div></section>
+      </div>
+    </section>
+  </main>
+  <dialog id="dialog"><form method="dialog"><div class="dialog-head"><h2 id="dialog-title"></h2><button value="cancel" aria-label="关闭">×</button></div><div id="dialog-fields"></div><p id="dialog-error" class="error"></p><div class="dialog-actions"><button value="cancel" class="secondary">取消</button><button id="dialog-submit" value="default">提交</button></div></form></dialog>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>
